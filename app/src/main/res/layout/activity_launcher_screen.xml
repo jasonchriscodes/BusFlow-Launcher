@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <!-- Left Section with Black Background -->
+    <LinearLayout
+        android:id="@+id/leftPanel"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="#000000"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Link Icons and Buttons for Navigation -->
+        <ImageView
+            android:id="@+id/customerServiceLink"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_customer_service"
+        android:contentDescription="Customer Service Email Link" />
+
+        <ImageView
+            android:id="@+id/thingsboardDashboardLink"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/ic_thingsboard_dashboard"
+        android:contentDescription="Thingsboard Dashboard Link" />
+
+        <ImageView
+            android:id="@+id/createRouteAppLink"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/ic_create_route"
+        android:contentDescription="App to Create Route" />
+
+        <ImageView
+            android:id="@+id/vlrsBusAppLink"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/ic_vlrs_bus"
+        android:contentDescription="VLRS Bus App" />
+    </LinearLayout>
+
+    <!-- Right Section with Background Image -->
+    <RelativeLayout
+        android:id="@+id/rightPanel"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="10"
+        android:background="@drawable/ic_bus_background">
+
+        <!-- Top-right Close and Minimize Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/minimizeButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_minimize"
+            android:contentDescription="Minimize Button" />
+
+            <ImageView
+                android:id="@+id/closeButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_close"
+            android:contentDescription="Close Button" />
+        </LinearLayout>
+
+        <!-- Bottom Buttons for Update and Start VLRS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="32dp">
+
+            <Button
+                android:id="@+id/updateButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Update VLRS"
+                android:backgroundTint="#000000"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="16dp"/>
+
+            <Button
+                android:id="@+id/startButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start VLRS"
+                android:backgroundTint="#000000"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="16dp"/>
+        </LinearLayout>
+
+        <!-- Version Text at Bottom Right -->
+        <TextView
+            android:id="@+id/versionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="16dp"
+            android:text="Version 1.0.58 (Update available: 1.0.59)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"/>
+    </RelativeLayout>
+
+</LinearLayout>
