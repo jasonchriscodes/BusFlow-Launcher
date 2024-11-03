@@ -14,7 +14,58 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Link Icons and Buttons for Navigation with Rounded Backgrounds -->
+        <!-- Top Buttons -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/thingsboardDashboardLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_thingsboard_dashboard"
+                android:contentDescription="Thingsboard Dashboard Link" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp"
+            android:layout_marginTop="12dp">
+
+            <ImageView
+                android:id="@+id/createRouteAppLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_create_route"
+                android:contentDescription="App to Create Route" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp"
+            android:layout_marginTop="12dp">
+
+            <ImageView
+                android:id="@+id/vlrsBusAppLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_vlrs_bus"
+                android:contentDescription="VLRS Bus App" />
+        </FrameLayout>
+
+        <!-- Space to push customerServiceLink to the bottom -->
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Bottom Customer Service Link -->
         <FrameLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -29,50 +80,6 @@
                 android:contentDescription="Customer Service Email Link" />
         </FrameLayout>
 
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@layout/rounded_white_background"
-            android:padding="4dp"
-            android:layout_marginTop="12dp">
-
-            <ImageView
-                android:id="@+id/thingsboardDashboardLink"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@drawable/ic_thingsboard_dashboard"
-                android:contentDescription="Thingsboard Dashboard Link" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@layout/rounded_white_background"
-            android:padding="8dp"
-            android:layout_marginTop="12dp">
-
-            <ImageView
-                android:id="@+id/createRouteAppLink"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_create_route"
-                android:contentDescription="App to Create Route" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@layout/rounded_white_background"
-            android:padding="8dp"
-            android:layout_marginTop="12dp">
-
-            <ImageView
-                android:id="@+id/vlrsBusAppLink"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_vlrs_bus"
-                android:contentDescription="VLRS Bus App" />
-        </FrameLayout>
     </LinearLayout>
 
     <!-- Right Section with Background Image -->
