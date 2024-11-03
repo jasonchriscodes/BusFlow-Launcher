@@ -158,7 +158,10 @@
             android:layout_margin="8dp"
             android:text="Version 1.0.58 (Update available: 1.0.59)"
             android:textColor="#000000"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:background="@layout/opacity_rounded_white_background" />
+
     </FrameLayout>
 
 </LinearLayout>
