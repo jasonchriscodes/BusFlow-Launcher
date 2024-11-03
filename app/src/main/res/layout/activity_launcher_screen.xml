@@ -12,7 +12,8 @@
         android:layout_weight="1"
         android:background="#000000"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:gravity="center_horizontal">
 
         <!-- Top Buttons -->
         <FrameLayout
@@ -83,12 +84,21 @@
     </LinearLayout>
 
     <!-- Right Section with Background Image -->
-    <RelativeLayout
+    <FrameLayout
         android:id="@+id/rightPanel"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="10"
-        android:background="@drawable/ic_bus_background">
+        android:layout_weight="10">
+
+        <!-- Background ImageView with bottom alignment -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_bus_background"
+            android:scaleType="centerCrop"
+            android:adjustViewBounds="true"
+            android:layout_gravity="bottom"
+            android:contentDescription="Bus Background" />
 
         <!-- Top-right Close and Minimize Buttons -->
         <LinearLayout
@@ -120,7 +130,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_alignParentBottom="true"
+            android:layout_gravity="bottom"
             android:layout_marginBottom="32dp">
 
             <Button
@@ -128,8 +138,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Update VLRS"
-                android:backgroundTint="#000000"
-                android:textColor="#FFFFFF"
                 android:layout_marginEnd="16dp"/>
 
             <Button
@@ -137,9 +145,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Start VLRS"
-                android:backgroundTint="#000000"
-                android:textColor="#FFFFFF"
                 android:layout_marginStart="16dp"/>
+
         </LinearLayout>
 
         <!-- Version Text at Bottom Right -->
@@ -147,12 +154,11 @@
             android:id="@+id/versionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentEnd="true"
-            android:layout_margin="16dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="8dp"
             android:text="Version 1.0.58 (Update available: 1.0.59)"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"/>
-    </RelativeLayout>
+            android:textColor="#000000"
+            android:textSize="14sp" />
+    </FrameLayout>
 
 </LinearLayout>
