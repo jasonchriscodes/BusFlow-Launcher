@@ -14,37 +14,65 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Link Icons and Buttons for Navigation -->
-        <ImageView
-            android:id="@+id/customerServiceLink"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_customer_service"
-        android:contentDescription="Customer Service Email Link" />
+        <!-- Link Icons and Buttons for Navigation with Rounded Backgrounds -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="8dp">
 
-        <ImageView
-            android:id="@+id/thingsboardDashboardLink"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/ic_thingsboard_dashboard"
-        android:contentDescription="Thingsboard Dashboard Link" />
+            <ImageView
+                android:id="@+id/customerServiceLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_customer_service"
+                android:contentDescription="Customer Service Email Link" />
+        </FrameLayout>
 
-        <ImageView
-            android:id="@+id/createRouteAppLink"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/ic_create_route"
-        android:contentDescription="App to Create Route" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="8dp"
+            android:layout_marginTop="16dp">
 
-        <ImageView
-            android:id="@+id/vlrsBusAppLink"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/ic_vlrs_bus"
-        android:contentDescription="VLRS Bus App" />
+            <ImageView
+                android:id="@+id/thingsboardDashboardLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_thingsboard_dashboard"
+                android:contentDescription="Thingsboard Dashboard Link" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="8dp"
+            android:layout_marginTop="16dp">
+
+            <ImageView
+                android:id="@+id/createRouteAppLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_create_route"
+                android:contentDescription="App to Create Route" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="8dp"
+            android:layout_marginTop="16dp">
+
+            <ImageView
+                android:id="@+id/vlrsBusAppLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_vlrs_bus"
+                android:contentDescription="VLRS Bus App" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Right Section with Background Image -->
@@ -68,7 +96,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:src="@drawable/ic_minimize"
-            android:contentDescription="Minimize Button" />
+                android:contentDescription="Minimize Button" />
 
             <ImageView
                 android:id="@+id/closeButton"
@@ -76,7 +104,7 @@
                 android:layout_height="32dp"
                 android:layout_marginStart="8dp"
                 android:src="@drawable/ic_close"
-            android:contentDescription="Close Button" />
+                android:contentDescription="Close Button" />
         </LinearLayout>
 
         <!-- Bottom Buttons for Update and Start VLRS -->
@@ -116,8 +144,8 @@
             android:layout_alignParentEnd="true"
             android:layout_margin="16dp"
             android:text="Version 1.0.58 (Update available: 1.0.59)"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"/>
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"/>
     </RelativeLayout>
 
 </LinearLayout>
