@@ -37,12 +37,25 @@ class LauncherActivity : AppCompatActivity() {
         val startButton = findViewById<Button>(R.id.startButton)
         val versionText = findViewById<TextView>(R.id.versionText)
 
+        val minimizeButton = findViewById<ImageView>(R.id.minimizeButton)
+        val closeButton = findViewById<ImageView>(R.id.closeButton)
+
         updateButton.setOnClickListener {
             promptUninstallAndInstall(latestVersion)
         }
 
         startButton.setOnClickListener {
             launchMainApp()
+        }
+
+        // Minimize the app
+        minimizeButton.setOnClickListener {
+            moveTaskToBack(true)
+        }
+
+        // Close the app
+        closeButton.setOnClickListener {
+            finishAndRemoveTask()
         }
 
         // Placeholder version information until API response
