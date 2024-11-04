@@ -1,14 +1,22 @@
 package com.jason.vlrs_launcher
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -21,8 +29,10 @@ import java.io.IOException
 class LauncherActivity : AppCompatActivity() {
 
     private lateinit var client: OkHttpClient
+    private val REQUEST_MANAGE_EXTERNAL_STORAGE = 1001
+    private val REQUEST_WRITE_PERMISSION = 1002
     private val MAIN_APP_PACKAGE = "com.jason.publisher" // Replace with your main app's package name
-    private val AID = "unique-device-id" // Replace with the unique identifier retrieval for your device
+    private lateinit var aid: String
     private lateinit var currentVersion: String
     private lateinit var latestVersion: String
 
@@ -30,7 +40,12 @@ class LauncherActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_launcher_screen)
 
+        // Check and request permission
+        checkAndRequestStoragePermission()
+
         client = OkHttpClient()
+        aid = getOrCreateAid()
+        Log.d("LauncherActivity aid", aid)
 
         // Set up button listeners
         val updateButton = findViewById<Button>(R.id.updateButton)
@@ -67,9 +82,63 @@ class LauncherActivity : AppCompatActivity() {
         checkForUpdates()
     }
 
+    /**
+     * Ensure permissions are requested before accessing external storage
+     */
+    private fun checkAndRequestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")
+                startActivityForResult(intent, REQUEST_MANAGE_EXTERNAL_STORAGE)
+            }
+        } else {
+            // For Android 10 and below, request WRITE_EXTERNAL_STORAGE permission
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                REQUEST_WRITE_PERMISSION
+            )
+        }
+    }
+
+    /** Retrieve the AID from the external folder or generate a new one */
+    @SuppressLint("HardwareIds")
+    private fun getOrCreateAid(): String {
+        val documentsDir = File(getExternalFilesDir(null), ".vlrshiddenfolder")
+
+        // Ensure the directory exists or create it
+        if (!documentsDir.exists()) {
+            val success = documentsDir.mkdirs()
+            if (!success) {
+                throw RuntimeException("Failed to create directory: ${documentsDir.absolutePath}")
+            }
+        }
+
+        val aidFile = File(documentsDir, "aid.txt")
+
+        // Check if the aid.txt file exists; if not, create it with a new AID
+        if (!aidFile.exists()) {
+            val aid = generateNewAid()
+            aidFile.writeText(aid)
+            return aid
+        }
+
+        // If file exists, read the AID from it
+        return aidFile.readText().trim()
+    }
+
+    /**
+     * Function to generate a new AID if needed
+     */
+    private fun generateNewAid(): String {
+        return Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    }
+
+    /** Check for app updates using the generated UUID. */
     private fun checkForUpdates() {
         val requestCurrent = Request.Builder()
-            .url("http://43.226.218.98:5000/api/current-version/$AID")
+            .url("http://43.226.218.98:5000/api/current-version/$aid")
             .build()
 
         client.newCall(requestCurrent).enqueue(object : Callback {
