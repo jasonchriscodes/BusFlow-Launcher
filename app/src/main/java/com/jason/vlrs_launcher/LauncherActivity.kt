@@ -31,7 +31,7 @@ class LauncherActivity : AppCompatActivity() {
     private lateinit var client: OkHttpClient
     private val REQUEST_MANAGE_EXTERNAL_STORAGE = 1001
     private val REQUEST_WRITE_PERMISSION = 1002
-    private val MAIN_APP_PACKAGE = "com.jason.publisher" // Replace with your main app's package name
+    private val MAIN_APP_PACKAGE = "com.jason.publisher"
     private lateinit var aid: String
     private lateinit var currentVersion: String
     private lateinit var latestVersion: String
@@ -251,11 +251,18 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun launchMainApp() {
+        // Try to get the default launch intent for the package
         val launchIntent = packageManager.getLaunchIntentForPackage(MAIN_APP_PACKAGE)
         if (launchIntent != null) {
             startActivity(launchIntent)
         } else {
-            showToast("Main app not found")
+            // If default intent fails, try launching SplashScreen directly
+            val explicitIntent = Intent().setClassName(MAIN_APP_PACKAGE, "com.jason.publisher.SplashScreen")
+            if (explicitIntent.resolveActivity(packageManager) != null) {
+                startActivity(explicitIntent)
+            } else {
+                showToast("Main app not found")
+            }
         }
         finish()
     }
