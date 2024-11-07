@@ -162,6 +162,39 @@
             android:textStyle="bold"
             android:background="@layout/opacity_rounded_white_background" />
 
+        <!-- Loading overlay -->
+        <RelativeLayout
+            android:id="@+id/loadingOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#80000000"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true">
+
+        <!-- Centered loading spinner -->
+        <ProgressBar
+            android:id="@+id/loading_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:indeterminate="true" />
+
+        <!-- Text below spinner -->
+        <TextView
+            android:id="@+id/loadingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/loading_spinner"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:text="Uninstalling app..."
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </RelativeLayout>
+
     </FrameLayout>
 
 </LinearLayout>

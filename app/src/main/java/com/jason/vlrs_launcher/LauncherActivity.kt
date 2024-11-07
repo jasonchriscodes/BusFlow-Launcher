@@ -17,6 +17,7 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -44,10 +45,14 @@ class LauncherActivity : AppCompatActivity() {
     private lateinit var currentVersion: String
     private lateinit var latestVersion: String
     private lateinit var versionText: TextView // Moved here for global access
+    private lateinit var loadingOverlay: RelativeLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_launcher_screen)
+
+        // Find the loading overlay by ID
+        loadingOverlay = findViewById(R.id.loadingOverlay)
 
         // Check and request permission
         checkAndRequestStoragePermission()
@@ -68,6 +73,7 @@ class LauncherActivity : AppCompatActivity() {
         val closeButton = findViewById<ImageView>(R.id.closeButton)
 
         updateButton.setOnClickListener {
+            showLoadingOverlay()
             promptUninstallAndInstall()
         }
 
@@ -95,6 +101,19 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     /**
+     * Shows the loading overlay for 55 seconds with a spinner and disables clicks on the screen.
+     */
+    private fun showLoadingOverlay() {
+        // Show the overlay
+        loadingOverlay.visibility = RelativeLayout.VISIBLE
+
+        // Hide overlay after 55 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            loadingOverlay.visibility = RelativeLayout.GONE
+        }, 55000) // 55 seconds
+    }
+
+    /**
      * Registers a BroadcastReceiver to listen for the ACTION_PACKAGE_REMOVED broadcast.
      * When triggered, it checks if the specified package (VLRS-Publisher) was removed,
      * and if so, initiates the download and installation of the new APK.
@@ -104,7 +123,7 @@ class LauncherActivity : AppCompatActivity() {
             override fun onReceive(context: Context, intent: Intent) {
                 val packageName = intent.data?.schemeSpecificPart
                 if (packageName == MAIN_APP_PACKAGE) {
-                    showToast("VLRS-Publisher uninstalled successfully")
+//                    showToast("VLRS-Publisher uninstalled successfully")
                     // Start download and install process
 //                    downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
                 }
@@ -266,7 +285,7 @@ class LauncherActivity : AppCompatActivity() {
 
         if (requestCode == UNINSTALL_REQUEST_CODE) {
             if (!isAppInstalled(MAIN_APP_PACKAGE)) {
-                Toast.makeText(this, "VLRS-Publisher uninstalled successfully", Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this, "VLRS-Publisher uninstalled successfully", Toast.LENGTH_SHORT).show()
                 // Proceed with downloading and installing the new APK
                 downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
             } else {
