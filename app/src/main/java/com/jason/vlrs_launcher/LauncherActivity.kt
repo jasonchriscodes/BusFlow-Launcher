@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +36,7 @@ class LauncherActivity : AppCompatActivity() {
     private lateinit var aid: String
     private lateinit var currentVersion: String
     private lateinit var latestVersion: String
+    private lateinit var versionText: TextView // Moved here for global access
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +52,7 @@ class LauncherActivity : AppCompatActivity() {
         // Set up button listeners
         val updateButton = findViewById<Button>(R.id.updateButton)
         val startButton = findViewById<Button>(R.id.startButton)
-        val versionText = findViewById<TextView>(R.id.versionText)
+        versionText = findViewById(R.id.versionText) // Initialize TextView
 
         val minimizeButton = findViewById<ImageView>(R.id.minimizeButton)
         val closeButton = findViewById<ImageView>(R.id.closeButton)
@@ -73,13 +75,20 @@ class LauncherActivity : AppCompatActivity() {
             finishAndRemoveTask()
         }
 
-        // Placeholder version information until API response
-        currentVersion = "1.0.58"  // Set a default value
-        latestVersion = "1.0.59"  // Set a default value
-        versionText.text = "Version $currentVersion (Update available: $latestVersion)"
+        // Set a placeholder until real version data is fetched
+        currentVersion = "1.0.0"  // Default value
+        latestVersion = "1.0.1"  // Default value
+        updateVersionText()
 
         // Fetch current and latest version information
         checkForUpdates()
+    }
+
+    /**
+     * Helper function to update versionText
+     */
+    private fun updateVersionText() {
+        versionText.text = "Version $currentVersion (Update available: $latestVersion)"
     }
 
     /**
@@ -154,7 +163,9 @@ class LauncherActivity : AppCompatActivity() {
                     val responseData = response.body?.string()
                     val json = JSONObject(responseData!!)
                     currentVersion = json.getString("version")
-                    checkLatestVersion(currentVersion)
+
+                    // Now check the latest version after getting the current version
+                    checkLatestVersion()
                 } else {
                     runOnUiThread {
                         showToast("Unexpected server response while fetching the current version.")
@@ -164,7 +175,10 @@ class LauncherActivity : AppCompatActivity() {
         })
     }
 
-    private fun checkLatestVersion(currentVersion: String) {
+    /**
+     * Check app latest version on debian server
+     */
+    private fun checkLatestVersion() {
         val requestLatest = Request.Builder()
             .url("http://43.226.218.98:5000/api/latest-version")
             .build()
@@ -183,13 +197,10 @@ class LauncherActivity : AppCompatActivity() {
                     val json = JSONObject(responseData!!)
                     latestVersion = json.getString("version")
 
+                    // Update the version information on the UI thread
                     runOnUiThread {
-                        val versionText = findViewById<TextView>(R.id.versionText)
-                        versionText.text = "Version $currentVersion (Update available: $latestVersion)"
-                    }
-
-                    if (currentVersion != latestVersion) {
-                        runOnUiThread {
+                        updateVersionText()
+                        if (currentVersion != latestVersion) {
                             showToast("A new version is available!")
                         }
                     }
@@ -202,25 +213,38 @@ class LauncherActivity : AppCompatActivity() {
         })
     }
 
+    /**
+     * Prompts the user to uninstall the current version of VLRS-Publisher and then initiates the download
+     * and installation of the latest version from the specified URL.
+     *
+     * @param latestVersion The latest version of the app to be installed.
+     */
     private fun promptUninstallAndInstall(latestVersion: String) {
-        showToast("A new version is available. Updating...")
+        showToast("Preparing to update VLRS-Publisher...")
 
         // Step 1: Uninstall the main app if it’s installed
-        val intent = Intent(Intent.ACTION_DELETE)
-        intent.data = Uri.parse("package:$MAIN_APP_PACKAGE")
-        startActivity(intent)
+        val uninstallIntent = Intent(Intent.ACTION_DELETE)
+        uninstallIntent.data = Uri.parse("package:$MAIN_APP_PACKAGE")
+        startActivity(uninstallIntent)
 
-        // Step 2: Download and install the new APK after uninstall
+        // Step 2: After uninstallation, download and install the new APK
         downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
     }
 
+    /**
+     * Downloads the latest APK from the specified URL and saves it to a local file.
+     * Once downloaded, it proceeds to install the APK on the device.
+     *
+     * @param apkUrl The URL to download the latest APK.
+     */
     private fun downloadAndInstallApk(apkUrl: String) {
         val request = Request.Builder().url(apkUrl).build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: okhttp3.Call, e: IOException) {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("LauncherActivity", "Download failed: ${e.message}", e)
                 runOnUiThread {
-                    showToast("Failed to download APK")
+                    showToast("Failed to download APK: ${e.message}")
                 }
             }
 
@@ -241,6 +265,11 @@ class LauncherActivity : AppCompatActivity() {
         })
     }
 
+    /**
+     * Installs the downloaded APK file by creating an intent with appropriate permissions.
+     *
+     * @param apkFile The APK file to be installed on the device.
+     */
     private fun installApk(apkFile: File) {
         val apkUri = FileProvider.getUriForFile(this, "com.jason.vlrs_launcher.provider", apkFile)
         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -250,6 +279,11 @@ class LauncherActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    /**
+     * Launches the main application (VLRS-Publisher) by first attempting to start it with its default intent.
+     * If the default intent is unavailable, it tries to directly launch the SplashScreen activity.
+     * If neither approach succeeds, a message is shown indicating the app was not found.
+     */
     private fun launchMainApp() {
         // Try to get the default launch intent for the package
         val launchIntent = packageManager.getLaunchIntentForPackage(MAIN_APP_PACKAGE)
