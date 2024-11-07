@@ -2,12 +2,17 @@ package com.jason.vlrs_launcher
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.widget.Button
@@ -33,6 +38,8 @@ class LauncherActivity : AppCompatActivity() {
     private val REQUEST_MANAGE_EXTERNAL_STORAGE = 1001
     private val REQUEST_WRITE_PERMISSION = 1002
     private val MAIN_APP_PACKAGE = "com.jason.publisher"
+    private lateinit var uninstallReceiver: BroadcastReceiver
+    private val UNINSTALL_REQUEST_CODE = 100
     private lateinit var aid: String
     private lateinit var currentVersion: String
     private lateinit var latestVersion: String
@@ -44,6 +51,9 @@ class LauncherActivity : AppCompatActivity() {
 
         // Check and request permission
         checkAndRequestStoragePermission()
+
+        // Register BroadcastReceiver for package removal
+        registerUninstallReceiver()
 
         client = OkHttpClient()
         aid = getOrCreateAid()
@@ -58,7 +68,7 @@ class LauncherActivity : AppCompatActivity() {
         val closeButton = findViewById<ImageView>(R.id.closeButton)
 
         updateButton.setOnClickListener {
-            promptUninstallAndInstall(latestVersion)
+            promptUninstallAndInstall()
         }
 
         startButton.setOnClickListener {
@@ -82,6 +92,29 @@ class LauncherActivity : AppCompatActivity() {
 
         // Fetch current and latest version information
         checkForUpdates()
+    }
+
+    /**
+     * Registers a BroadcastReceiver to listen for the ACTION_PACKAGE_REMOVED broadcast.
+     * When triggered, it checks if the specified package (VLRS-Publisher) was removed,
+     * and if so, initiates the download and installation of the new APK.
+     */
+    private fun registerUninstallReceiver() {
+        uninstallReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val packageName = intent.data?.schemeSpecificPart
+                if (packageName == MAIN_APP_PACKAGE) {
+                    showToast("VLRS-Publisher uninstalled successfully")
+                    // Start download and install process
+//                    downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
+                }
+            }
+        }
+
+        val intentFilter = IntentFilter(Intent.ACTION_PACKAGE_REMOVED).apply {
+            addDataScheme("package")
+        }
+        registerReceiver(uninstallReceiver, intentFilter)
     }
 
     /**
@@ -214,41 +247,60 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     /**
-     * Prompts the user to uninstall the current version of VLRS-Publisher and then initiates the download
-     * and installation of the latest version from the specified URL.
-     *
-     * @param latestVersion The latest version of the app to be installed.
+     * Prompts to uninstall the main app using `ACTION_UNINSTALL_PACKAGE`, which provides a callback.
      */
-    private fun promptUninstallAndInstall(latestVersion: String) {
-        showToast("Preparing to update VLRS-Publisher...")
-
-        // Step 1: Uninstall the main app if it’s installed
-        val uninstallIntent = Intent(Intent.ACTION_DELETE)
-        uninstallIntent.data = Uri.parse("package:$MAIN_APP_PACKAGE")
-        startActivity(uninstallIntent)
-
-        // Step 2: After uninstallation, download and install the new APK
-        downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
+    private fun promptUninstallAndInstall() {
+        val uninstallIntent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+            data = Uri.parse("package:$MAIN_APP_PACKAGE")
+            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+        }
+        startActivityForResult(uninstallIntent, UNINSTALL_REQUEST_CODE)
     }
 
     /**
-     * Downloads the latest APK from the specified URL and saves it to a local file.
-     * Once downloaded, it proceeds to install the APK on the device.
-     *
-     * @param apkUrl The URL to download the latest APK.
+     * Handle the result of the uninstall intent.
+     * If uninstallation was successful, start the download and install the new APK.
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == UNINSTALL_REQUEST_CODE) {
+            if (!isAppInstalled(MAIN_APP_PACKAGE)) {
+                Toast.makeText(this, "VLRS-Publisher uninstalled successfully", Toast.LENGTH_SHORT).show()
+                // Proceed with downloading and installing the new APK
+                downloadAndInstallApk("http://43.226.218.98:5000/api/download-latest-apk")
+            } else {
+                Toast.makeText(this, "Uninstallation canceled. Please uninstall to continue.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
+     * Checks if a package is installed by attempting to retrieve its PackageInfo.
+     */
+    private fun isAppInstalled(packageName: String): Boolean {
+        return try {
+            packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    /**
+     * Download the APK from the server and initiate installation.
      */
     private fun downloadAndInstallApk(apkUrl: String) {
         val request = Request.Builder().url(apkUrl).build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e("LauncherActivity", "Download failed: ${e.message}", e)
                 runOnUiThread {
-                    showToast("Failed to download APK: ${e.message}")
+                    Toast.makeText(this@LauncherActivity, "Failed to download APK", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            override fun onResponse(call: okhttp3.Call, response: Response) {
+            override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     val apkFile = File(getExternalFilesDir(null), "update.apk")
                     apkFile.writeBytes(response.body!!.bytes())
@@ -258,7 +310,7 @@ class LauncherActivity : AppCompatActivity() {
                     }
                 } else {
                     runOnUiThread {
-                        showToast("Error downloading APK")
+                        Toast.makeText(this@LauncherActivity, "Error downloading APK", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -266,9 +318,7 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     /**
-     * Installs the downloaded APK file by creating an intent with appropriate permissions.
-     *
-     * @param apkFile The APK file to be installed on the device.
+     * Install the downloaded APK file.
      */
     private fun installApk(apkFile: File) {
         val apkUri = FileProvider.getUriForFile(this, "com.jason.vlrs_launcher.provider", apkFile)
@@ -303,5 +353,13 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Unregisters the uninstallReceiver when the activity is destroyed to prevent memory leaks.
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(uninstallReceiver)
     }
 }
