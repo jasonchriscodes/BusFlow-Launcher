@@ -2,6 +2,7 @@ package com.jason.vlrs_launcher
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -28,6 +29,7 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
 import org.json.JSONObject
 import java.io.File
@@ -74,6 +76,7 @@ class LauncherActivity : AppCompatActivity() {
 
         updateButton.setOnClickListener {
             showLoadingOverlay()
+            updateCurrentVersionOnServer()
             promptUninstallAndInstall()
         }
 
@@ -98,6 +101,49 @@ class LauncherActivity : AppCompatActivity() {
 
         // Fetch current and latest version information
         checkForUpdates()
+    }
+
+    /** Update the current folder on the server with the latest version for the device UUID. */
+    private fun updateCurrentVersionOnServer() {
+        val request = Request.Builder()
+            .url("http://43.226.218.98:5000/api/update-current-folder/$aid")
+            .post(RequestBody.create(null, ByteArray(0)))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("SplashScreen", "Failed to update the current version on the server", e)
+                runOnUiThread {
+                    showFailureDialog("Failed to update the current version on the server. Please check your connection.")
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    runOnUiThread {
+                    }
+                } else {
+                    runOnUiThread {
+                        showFailureDialog("Unexpected server response while updating the current version.")
+                    }
+                }
+            }
+        })
+    }
+
+    /**
+     * Show an error dialog if fetching data fails.
+     * @param message The error message to display.
+     */
+    private fun showFailureDialog(message: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Error")
+        builder.setMessage(message)
+        builder.setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss()
+        }
+        builder.setCancelable(false)
+        builder.show()
     }
 
     /**
@@ -140,7 +186,11 @@ class LauncherActivity : AppCompatActivity() {
      * Helper function to update versionText
      */
     private fun updateVersionText() {
-        versionText.text = "Version $currentVersion (Update available: $latestVersion)"
+        if(currentVersion == latestVersion){
+            versionText.text = "Your version $currentVersion is up to date."
+        } else {
+            versionText.text = "Version $currentVersion (Update available: $latestVersion)"
+        }
     }
 
     /**

@@ -188,7 +188,7 @@
             android:layout_below="@id/loading_spinner"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="16dp"
-            android:text="Uninstalling app..."
+            android:text="Please wait..."
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             android:textStyle="bold" />
