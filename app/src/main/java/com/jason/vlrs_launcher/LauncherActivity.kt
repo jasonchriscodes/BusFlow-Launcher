@@ -99,6 +99,12 @@ class LauncherActivity : AppCompatActivity() {
             openThingsboardDashboard()
         }
 
+        val createRouteAppLink = findViewById<ImageView>(R.id.createRouteAppLink)
+        createRouteAppLink.setOnClickListener {
+            checkAndLaunchOrDownloadRouteApp()
+        }
+
+
         // Set a placeholder until real version data is fetched
         currentVersion = "1.0.0"  // Default value
         latestVersion = "1.0.1"  // Default value
@@ -107,6 +113,90 @@ class LauncherActivity : AppCompatActivity() {
         // Fetch current and latest version information
         checkForUpdates()
     }
+
+    /**
+     * Attempts to launch the route generation app (bus_route). If the app is installed and launches successfully,
+     * it shows a toast confirming the launch. If the app fails to launch or is not installed, it proceeds
+     * to download and install the app from the provided API endpoint.
+     */
+    private fun checkAndLaunchOrDownloadRouteApp() {
+        try {
+            // Attempt to launch the app using launchCreateRouteApp()
+            launchCreateRouteApp()
+            showToast("Launching Create Route app.")
+        } catch (e: Exception) {
+            // If launching fails, proceed to download and install
+            showToast("Failed to launch Create Route app. Attempting to download and install.")
+            downloadAndInstallRouteApp()
+        }
+    }
+
+    /**
+     * Launches the main application (bus_route) by first attempting to start it with its default intent.
+     * If the default intent is unavailable, it tries to directly launch the main activity.
+     * If neither approach succeeds, a message is shown indicating the app was not found.
+     */
+    private fun launchCreateRouteApp() {
+        val routeAppPackage = "com.example.bus_route" // Define the package name of the route app
+
+        // Try to get the default launch intent for the package
+        val launchIntent = packageManager.getLaunchIntentForPackage(routeAppPackage)
+        if (launchIntent != null) {
+            startActivity(launchIntent)
+        } else {
+            // If default intent fails, try launching the MainActivity directly
+            val explicitIntent = Intent().setClassName(routeAppPackage, "com.example.bus_route.MainActivity")
+            if (explicitIntent.resolveActivity(packageManager) != null) {
+                startActivity(explicitIntent)
+            } else {
+                showToast("Create Route app not found")
+                downloadAndInstallRouteApp() // Proceed to download if the app is not installed
+            }
+        }
+        finish()
+    }
+
+
+    /**
+     * Handle downloading the APK from the server and then installing it on the device
+     */
+    private fun downloadAndInstallRouteApp() {
+        showLoadingOverlay()
+
+        val downloadUrl = "http://43.226.218.98:5000/api/download-route-generation-apk"
+        val request = Request.Builder().url(downloadUrl).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    hideLoadingOverlay()
+                    showToast("Failed to download the route generation app.")
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val apkFile = File(getExternalFilesDir(null), "route-generation-release.apk")
+                    apkFile.writeBytes(response.body!!.bytes())
+
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        installApk(apkFile)
+                    }
+                } else {
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        showToast("Error downloading route generation APK.")
+                    }
+                }
+            }
+        })
+    }
+
+    private fun hideLoadingOverlay() {
+        loadingOverlay.visibility = RelativeLayout.GONE
+    }
+
 
     /**
      * Opens the Thingsboard dashboard URL in the default browser.
