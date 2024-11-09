@@ -94,6 +94,11 @@ class LauncherActivity : AppCompatActivity() {
             finishAndRemoveTask()
         }
 
+        val thingsboardDashboardLink = findViewById<ImageView>(R.id.thingsboardDashboardLink)
+        thingsboardDashboardLink.setOnClickListener {
+            openThingsboardDashboard()
+        }
+
         // Set a placeholder until real version data is fetched
         currentVersion = "1.0.0"  // Default value
         latestVersion = "1.0.1"  // Default value
@@ -101,6 +106,15 @@ class LauncherActivity : AppCompatActivity() {
 
         // Fetch current and latest version information
         checkForUpdates()
+    }
+
+    /**
+     * Opens the Thingsboard dashboard URL in the default browser.
+     */
+    private fun openThingsboardDashboard() {
+        val dashboardUrl = "http://43.226.218.97:8080/home"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(dashboardUrl))
+        startActivity(intent)
     }
 
     /** Update the current folder on the server with the latest version for the device UUID. */
