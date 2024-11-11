@@ -104,6 +104,11 @@ class LauncherActivity : AppCompatActivity() {
             checkAndLaunchOrDownloadRouteApp()
         }
 
+        val customerServiceLink = findViewById<ImageView>(R.id.customerServiceLink)
+        customerServiceLink.setOnClickListener {
+            val intent = Intent(this, FeedbackActivity::class.java)
+            startActivity(intent)
+        }
 
         // Set a placeholder until real version data is fetched
         currentVersion = "1.0.0"  // Default value
