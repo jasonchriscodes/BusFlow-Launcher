@@ -48,5 +48,7 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".FeedbackActivity" />
+
     </application>
 </manifest>
