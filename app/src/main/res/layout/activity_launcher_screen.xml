@@ -45,6 +45,21 @@
                 android:contentDescription="App to Create Route" />
         </FrameLayout>
 
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp"
+            android:layout_marginTop="12dp">
+
+            <ImageView
+                android:id="@+id/registerHelpLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/question"
+                android:contentDescription="Help with Register Device" />
+        </FrameLayout>
+
         <!-- Space to push customerServiceLink to the bottom -->
         <Space
             android:layout_width="wrap_content"

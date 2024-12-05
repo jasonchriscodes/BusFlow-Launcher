@@ -110,6 +110,11 @@ class LauncherActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        val registerHelpLink = findViewById<ImageView>(R.id.registerHelpLink)
+        registerHelpLink.setOnClickListener {
+            openRegisterHelp()
+        }
+
         // Set a placeholder until real version data is fetched
         currentVersion = "1.0.0"  // Default value
         latestVersion = "1.0.1"  // Default value
@@ -117,6 +122,20 @@ class LauncherActivity : AppCompatActivity() {
 
         // Fetch current and latest version information
         checkForUpdates()
+    }
+
+    /**
+     * Opens the help PDF in a browser.
+     */
+    private fun openRegisterHelp() {
+        val pdfUrl = "http://43.226.218.98:5000/api/view-registration-guide"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pdfUrl))
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            showToast("Failed to open the registration guide.")
+            Log.e("LauncherActivity", "Error opening registration guide", e)
+        }
     }
 
     /**
