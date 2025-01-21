@@ -33,7 +33,6 @@
             android:authorities="com.jason.vlrs_launcher.provider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <!-- Add the meta-data tag for file paths -->
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />

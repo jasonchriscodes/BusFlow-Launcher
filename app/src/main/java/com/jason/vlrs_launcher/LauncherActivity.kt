@@ -139,50 +139,51 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     /**
-     * Attempts to launch the route generation app (bus_route). If the app is installed and launches successfully,
-     * it shows a toast confirming the launch. If the app fails to launch or is not installed, it proceeds
-     * to download and install the app from the provided API endpoint.
+     * Attempts to launch the route generation app (bus_route) if installed.
+     * If the app is not installed, it downloads and installs the app.
      */
     private fun checkAndLaunchOrDownloadRouteApp() {
+        val routeAppPackage = "com.example.bus_route"
+
         try {
-            // Attempt to launch the app using launchCreateRouteApp()
-            launchCreateRouteApp()
+            // Always try to launch the app first
+            launchCreateRouteApp(routeAppPackage)
             showToast("Launching Create Route app.")
         } catch (e: Exception) {
-            // If launching fails, proceed to download and install
-            showToast("Failed to launch Create Route app. Attempting to download and install.")
-            downloadAndInstallRouteApp()
-        }
-    }
+            Log.e("LauncherActivity", "Failed to launch Create Route app: ${e.message}", e)
 
-    /**
-     * Launches the main application (bus_route) by first attempting to start it with its default intent.
-     * If the default intent is unavailable, it tries to directly launch the main activity.
-     * If neither approach succeeds, a message is shown indicating the app was not found.
-     */
-    private fun launchCreateRouteApp() {
-        val routeAppPackage = "com.example.bus_route" // Define the package name of the route app
-
-        // Try to get the default launch intent for the package
-        val launchIntent = packageManager.getLaunchIntentForPackage(routeAppPackage)
-        if (launchIntent != null) {
-            startActivity(launchIntent)
-        } else {
-            // If default intent fails, try launching the MainActivity directly
-            val explicitIntent = Intent().setClassName(routeAppPackage, "com.example.bus_route.MainActivity")
-            if (explicitIntent.resolveActivity(packageManager) != null) {
-                startActivity(explicitIntent)
+            // If launching fails, check installation status
+            if (!isAppInstalled(routeAppPackage)) {
+                showToast("Create Route app not found. Downloading...")
+                downloadAndInstallRouteApp()
             } else {
-                showToast("Create Route app not found")
-                downloadAndInstallRouteApp() // Proceed to download if the app is not installed
+                showToast("Create Route app exists but failed to launch.")
             }
         }
-        finish()
     }
 
+    /**
+     * Launches the specified application by package name.
+     */
+    private fun launchCreateRouteApp(packageName: String) {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+        if (launchIntent != null) {
+            Log.d("LauncherActivity", "Launching $packageName with default intent.")
+            startActivity(launchIntent)
+        } else {
+            // Explicitly try to launch the main activity
+            val explicitIntent = Intent().setClassName(packageName, "$packageName.MainActivity")
+            if (explicitIntent.resolveActivity(packageManager) != null) {
+                Log.d("LauncherActivity", "Launching $packageName with explicit intent.")
+                startActivity(explicitIntent)
+            } else {
+                throw Exception("$packageName launch failed. No matching intent found.")
+            }
+        }
+    }
 
     /**
-     * Handle downloading the APK from the server and then installing it on the device
+     * Downloads and installs the route generation app APK from the server.
      */
     private fun downloadAndInstallRouteApp() {
         showLoadingOverlay()
@@ -192,25 +193,42 @@ class LauncherActivity : AppCompatActivity() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
+                Log.e("LauncherActivity", "Failed to download APK: ${e.message}", e)
                 runOnUiThread {
                     hideLoadingOverlay()
-                    showToast("Failed to download the route generation app.")
+                    showToast("Failed to download APK. Please check your connection.")
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val apkFile = File(getExternalFilesDir(null), "route-generation-release.apk")
-                    apkFile.writeBytes(response.body!!.bytes())
-
+                if (!response.isSuccessful) {
+                    Log.e("LauncherActivity", "Download failed: ${response.message}")
                     runOnUiThread {
                         hideLoadingOverlay()
+                        showToast("Download failed. Server error.")
+                    }
+                    return
+                }
+
+                val apkFile = File(getExternalFilesDir(null), "route-generation-release.apk")
+                try {
+                    response.body?.byteStream()?.use { inputStream ->
+                        apkFile.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+
+                    Log.d("LauncherActivity", "APK saved at: ${apkFile.absolutePath}")
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        showToast("Download complete. Installing APK...")
                         installApk(apkFile)
                     }
-                } else {
+                } catch (e: IOException) {
+                    Log.e("LauncherActivity", "Error saving APK: ${e.message}", e)
                     runOnUiThread {
                         hideLoadingOverlay()
-                        showToast("Error downloading route generation APK.")
+                        showToast("Error saving APK. Please try again.")
                     }
                 }
             }
@@ -473,13 +491,87 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     /**
-     * Checks if a package is installed by attempting to retrieve its PackageInfo.
+     * Sometimes an app is installed but disabled. Ensure the app is enabled before attempting to launch it
+     */
+    private fun isAppInstalledAndEnabled(packageName: String): Boolean {
+        return try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            val isEnabled = packageInfo.applicationInfo.enabled
+            Log.d("LauncherActivity", "$packageName is installed and enabled: $isEnabled")
+            isEnabled
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.d("LauncherActivity", "$packageName is NOT installed.")
+            false
+        } catch (e: Exception) {
+            Log.e("LauncherActivity", "Unexpected error while checking $packageName: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Instead of relying on FileProvider and manually invoking the installer, consider using the Intent approach with the system package installer to install and verify the APK
+     */
+    private fun installApkUsingPackageInstaller(apkFile: File) {
+        val apkUri = FileProvider.getUriForFile(this, "com.jason.vlrs_launcher.provider", apkFile)
+        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+            data = apkUri
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            Log.d("LauncherActivity", "Starting APK installation using Package Installer.")
+            startActivity(installIntent)
+        } catch (e: Exception) {
+            Log.e("LauncherActivity", "Error launching Package Installer: ${e.message}", e)
+            showToast("Error launching Package Installer. Please try again.")
+        }
+    }
+
+    /**
+     * Add a loop or delay to check if the package becomes available after installation
+     */
+    private fun retryLaunchAfterInstall(packageName: String) {
+        val maxRetries = 5
+        var attempt = 0
+
+        val handler = Handler(Looper.getMainLooper())
+        val checkRunnable = object : Runnable {
+            override fun run() {
+                if (isAppInstalledAndEnabled(packageName)) {
+                    Log.d("LauncherActivity", "Package $packageName is installed. Launching now.")
+                    launchCreateRouteApp(packageName)
+                } else if (attempt < maxRetries) {
+                    attempt++
+                    Log.d("LauncherActivity", "Retry $attempt: Checking if $packageName is installed.")
+                    handler.postDelayed(this, 2000) // Check every 2 seconds
+                } else {
+                    Log.e("LauncherActivity", "Max retries reached. $packageName not found.")
+                    showToast("Failed to install and launch Create Route app.")
+                }
+            }
+        }
+
+        handler.post(checkRunnable)
+    }
+
+    /**
+     * Checks if the specified package is installed on the device.
+     * Logs the result for debugging purposes.
      */
     private fun isAppInstalled(packageName: String): Boolean {
         return try {
-            packageManager.getPackageInfo(packageName, 0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            Log.d("LauncherActivity", "$packageName is installed.")
             true
         } catch (e: PackageManager.NameNotFoundException) {
+            Log.d("LauncherActivity", "$packageName is NOT installed.")
+            false
+        } catch (e: Exception) {
+            Log.e("LauncherActivity", "Unexpected error while checking $packageName: ${e.message}", e)
             false
         }
     }
@@ -523,7 +615,21 @@ class LauncherActivity : AppCompatActivity() {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
-        startActivity(intent)
+        try {
+            Log.d("LauncherActivity", "Starting APK installation from: ${apkFile.absolutePath}")
+            startActivity(intent)
+            Handler(Looper.getMainLooper()).postDelayed({
+                val isInstalled = isAppInstalled("com.example.bus_route")
+                Log.d("LauncherActivity", "Post-install check: com.example.bus_route installed = $isInstalled")
+                if (isInstalled) {
+                    launchCreateRouteApp("com.example.bus_route")
+                } else {
+                    Log.e("LauncherActivity", "Installation failed for com.example.bus_route.")
+                }
+            }, 5000) // Delay to allow installation to complete
+        } catch (e: Exception) {
+            Log.e("LauncherActivity", "Error during APK installation: ${e.message}", e)
+        }
     }
 
     /**
