@@ -53,6 +53,21 @@
             android:layout_marginTop="12dp">
 
             <ImageView
+                android:id="@+id/createScheduleAppLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_create_schedule"
+                android:contentDescription="App to Create Schedule" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp"
+            android:layout_marginTop="12dp">
+
+            <ImageView
                 android:id="@+id/registerHelpLink"
                 android:layout_width="48dp"
                 android:layout_height="48dp"

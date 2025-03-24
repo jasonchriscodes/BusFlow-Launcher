@@ -104,6 +104,11 @@ class LauncherActivity : AppCompatActivity() {
             checkAndLaunchOrDownloadRouteApp()
         }
 
+        val createScheduleAppLink = findViewById<ImageView>(R.id.createScheduleAppLink)
+        createScheduleAppLink.setOnClickListener {
+            checkAndLaunchOrDownloadScheduleApp()
+        }
+
         val customerServiceLink = findViewById<ImageView>(R.id.customerServiceLink)
         customerServiceLink.setOnClickListener {
             val intent = Intent(this, FeedbackActivity::class.java)
@@ -160,6 +165,112 @@ class LauncherActivity : AppCompatActivity() {
                 showToast("Create Route app exists but failed to launch.")
             }
         }
+    }
+
+    /**
+     * Checks if the Schedule Generation app is installed and attempts to launch it.
+     * If the app is not installed, it downloads and installs the app.
+     */
+    private fun checkAndLaunchOrDownloadScheduleApp() {
+        val scheduleAppPackage = "com.example.schedule_generation"
+
+        try {
+            // Try to launch the app if installed
+            launchCreateScheduleApp(scheduleAppPackage)
+            showToast("Launching Create Schedule app.")
+        } catch (e: Exception) {
+            Log.e("LauncherActivity", "Failed to launch Create Schedule app: ${e.message}", e)
+
+            // If launching fails, attempt to download and install the app
+            if (!isAppInstalled(scheduleAppPackage)) {
+                showToast("Create Schedule app not found. Downloading...")
+                downloadAndInstallScheduleApp()
+            } else {
+                showToast("Create Schedule app exists but failed to launch.")
+            }
+        }
+    }
+
+    /**
+     * Attempts to launch the Schedule Generation app by package name.
+     * Uses either the default launch intent or a direct reference to the MainActivity.
+     *
+     * @param packageName The package name of the Schedule Generation app.
+     */
+    private fun launchCreateScheduleApp(packageName: String) {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+        if (launchIntent != null) {
+            Log.d("LauncherActivity", "Launching $packageName with default intent.")
+            startActivity(launchIntent)
+        } else {
+            // Fallback to launching the MainActivity directly
+            val explicitIntent = Intent().setClassName(packageName, "$packageName.MainActivity")
+            if (explicitIntent.resolveActivity(packageManager) != null) {
+                Log.d("LauncherActivity", "Launching $packageName with explicit intent.")
+                startActivity(explicitIntent)
+            } else {
+                throw Exception("$packageName launch failed. No matching intent found.")
+            }
+        }
+    }
+
+    /**
+     * Downloads and installs the Schedule Generation app APK from the server.
+     */
+    private fun downloadAndInstallScheduleApp() {
+        showLoadingOverlay()
+
+        val downloadUrl = "http://43.226.218.98:5000/api/download-schedule-generation-apk"
+        val request = Request.Builder().url(downloadUrl).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            /**
+             * Handles download failure cases by logging the error and notifying the user.
+             */
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("LauncherActivity", "Failed to download Schedule APK: ${e.message}", e)
+                runOnUiThread {
+                    hideLoadingOverlay()
+                    showToast("Failed to download Schedule APK. Please check your connection.")
+                }
+            }
+
+            /**
+             * Handles successful download response, saving the file and initiating installation.
+             */
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) {
+                    Log.e("LauncherActivity", "Download failed: ${response.message}")
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        showToast("Download failed. Server error.")
+                    }
+                    return
+                }
+
+                val apkFile = File(getExternalFilesDir(null), "schedule-generation-release.apk")
+                try {
+                    response.body?.byteStream()?.use { inputStream ->
+                        apkFile.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+
+                    Log.d("LauncherActivity", "Schedule APK saved at: ${apkFile.absolutePath}")
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        showToast("Download complete. Installing APK...")
+                        installApk(apkFile)
+                    }
+                } catch (e: IOException) {
+                    Log.e("LauncherActivity", "Error saving Schedule APK: ${e.message}", e)
+                    runOnUiThread {
+                        hideLoadingOverlay()
+                        showToast("Error saving Schedule APK. Please try again.")
+                    }
+                }
+            }
+        })
     }
 
     /**
