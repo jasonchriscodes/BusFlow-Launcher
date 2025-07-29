@@ -38,6 +38,22 @@
             android:layout_marginTop="12dp">
 
             <ImageView
+                android:id="@+id/generateATRouteLink"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_at_logo_no_bag"
+                android:clipToOutline="true"
+                android:contentDescription="Generate Route from Auckland Transport API" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@layout/rounded_white_background"
+            android:padding="4dp"
+            android:layout_marginTop="12dp">
+
+            <ImageView
                 android:id="@+id/createRouteAppLink"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -109,7 +125,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/ic_bus_background"
+            android:src="@drawable/ic_bus_background9"
             android:scaleType="centerCrop"
             android:adjustViewBounds="true"
             android:layout_gravity="bottom"
@@ -152,14 +168,14 @@
                 android:id="@+id/updateButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Update VLRS"
+                android:text="Update BuSkedo"
                 android:layout_marginEnd="16dp"/>
 
             <Button
                 android:id="@+id/startButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start VLRS"
+                android:text="Start BuSkedo"
                 android:layout_marginStart="16dp"/>
 
         </LinearLayout>

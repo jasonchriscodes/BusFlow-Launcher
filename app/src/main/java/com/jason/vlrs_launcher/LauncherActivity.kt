@@ -99,6 +99,12 @@ class LauncherActivity : AppCompatActivity() {
             openThingsboardDashboard()
         }
 
+        val generateATRouteLink = findViewById<ImageView>(R.id.generateATRouteLink)
+        generateATRouteLink.setOnClickListener {
+            val intent = Intent(this, GenerateATRouteActivity::class.java)
+            startActivity(intent)
+        }
+
         val createRouteAppLink = findViewById<ImageView>(R.id.createRouteAppLink)
         createRouteAppLink.setOnClickListener {
             checkAndLaunchOrDownloadRouteApp()
