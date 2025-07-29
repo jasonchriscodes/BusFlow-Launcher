@@ -5,6 +5,7 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -31,36 +32,47 @@ class GenerateATRouteActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_generate_at_route)
 
+        // Set default values for input fields
+        findViewById<TextView>(R.id.routeIdInput).text = "WX1-207"
+        findViewById<TextView>(R.id.directionIdInput).text = "1"
+        findViewById<TextView>(R.id.shiftStartInput).text = "10:00"
+        findViewById<TextView>(R.id.shiftEndInput).text = "19:00"
+
         val fetchButton = findViewById<Button>(R.id.fetchRoutesButton)
-        val logOutput = findViewById<TextView>(R.id.logOutput)
+        val busRouteOutput = findViewById<TextView>(R.id.busRouteOutput)
+        val scheduleOutput = findViewById<TextView>(R.id.scheduleOutput)
+
+        val generateButton = findViewById<Button>(R.id.generateButton)
+        generateButton.setOnClickListener {
+            generateBusAndScheduleData()
+        }
 
         fetchButton.setOnClickListener {
-            val logOutput = findViewById<TextView>(R.id.logOutput)
-            logOutput.text = ""
 
             val zipFile = File(getHiddenFolder(), "gtfs.zip")
             val gtfsFolder = getGTFSFolder()
 
             // Check if GTFS zip already exists
             if (zipFile.exists()) {
-                logOutput.append("⚠️ GTFS zip file already exists.\n")
+                Toast.makeText(this, "GTFS zip already exist", Toast.LENGTH_SHORT).show()
             } else {
-                logOutput.append("Downloading GTFS zip...\n")
+                Toast.makeText(this, "Downloading GTFS zip...", Toast.LENGTH_SHORT).show()
                 downloadGTFSZip { downloadedZip ->
                     if (downloadedZip != null) {
                         lifecycleScope.launch(Dispatchers.IO) {
                             val success = extractZip(downloadedZip, gtfsFolder)
                             withContext(Dispatchers.Main) {
                                 if (success) {
-                                    logOutput.append("✅ GTFS data extracted to GTFS folder.\n")
+                                    Toast.makeText(applicationContext, "✅ GTFS data extracted to GTFS folder.", Toast.LENGTH_SHORT).show()
+
                                 } else {
-                                    logOutput.append("❌ Failed to extract GTFS data.\n")
+                                    Toast.makeText(applicationContext, "❌ Failed to extract GTFS data.", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
                     } else {
                         runOnUiThread {
-                            logOutput.append("❌ Failed to download GTFS zip.\n")
+                            Toast.makeText(this, "❌ Failed to download GTFS zip.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -69,10 +81,142 @@ class GenerateATRouteActivity : AppCompatActivity() {
             // Check if GTFS folder is already populated
             val files = gtfsFolder.listFiles()
             if (files != null && files.isNotEmpty()) {
-                logOutput.append("📁 GTFS folder already contains ${files.size} files.\n")
+                Toast.makeText(this, "📁 GTFS folder already contains ${files.size} files.", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+    /**
+     * Generates busRouteData and scheduleData from GTFS .txt files in a memory-safe way.
+     * Filters trips using routeId and directionId, and shows first 7 stops of the first matching trip.
+     */
+    private fun generateBusAndScheduleData() {
+        val routeId = findViewById<TextView>(R.id.routeIdInput).text.toString().trim()
+        val directionId = findViewById<TextView>(R.id.directionIdInput).text.toString().trim().toIntOrNull() ?: 0
+
+        val gtfsDir = File(getGTFSFolder().absolutePath)
+        val tripsFile = File(gtfsDir, "trips.txt")
+        val stopTimesFile = File(gtfsDir, "stop_times.txt")
+        val stopsFile = File(gtfsDir, "stops.txt")
+
+        if (!tripsFile.exists() || !stopTimesFile.exists() || !stopsFile.exists()) {
+            Toast.makeText(this, "❌ Missing required GTFS files (trips.txt, stop_times.txt, stops.txt)", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                var firstTripId: String? = null
+
+                // Stream trips.txt line-by-line to find first matching tripId
+                tripsFile.bufferedReader().useLines { lines ->
+                    lines.drop(1).forEach { line ->
+                        val cols = line.split(",")
+                        if (cols[0] == routeId && cols.getOrNull(5)?.toIntOrNull() == directionId) {
+                            firstTripId = cols.getOrNull(2)
+                            return@forEach
+                        }
+                    }
+                }
+
+                if (firstTripId == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(applicationContext, "❌ No trips found for route $routeId with direction $directionId", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                // Read first 7 stops from stop_times.txt
+                val tripStops = mutableListOf<List<String>>()
+                stopTimesFile.bufferedReader().useLines { lines ->
+                    lines.drop(1).forEach { line ->
+                        val cols = line.split(",")
+                        if (cols.getOrNull(0) == firstTripId && tripStops.size < 7) {
+                            tripStops.add(cols)
+                        }
+                    }
+                }
+
+                // Load all stops from stops.txt into a Map
+                val stopsMap = mutableMapOf<String, List<String>>()
+                stopsFile.bufferedReader().useLines { lines ->
+                    lines.drop(1).forEach { line ->
+                        val cols = line.split(",")
+                        if (cols.size >= 4) {
+                            stopsMap[cols[0]] = cols
+                        }
+                    }
+                }
+
+                // Build busStops with matched stop info
+                val busStops = tripStops.mapIndexed { index, row ->
+                    val stopId = row[3]
+                    val stopInfo = stopsMap[stopId] ?: listOf("", "", "", "")
+                    mapOf(
+                        "name" to "Stop ${index + 1}",
+                        "time" to row[2].take(5),
+                        "latitude" to stopInfo[2],
+                        "longitude" to stopInfo[3],
+                        "address" to stopInfo[1],
+                        "abbreviation" to stopInfo[1].split(" ").joinToString("") { it.first().uppercaseChar().toString() }
+                    )
+                }
+
+                val busRouteData = listOf(
+                    mapOf(
+                        "starting_point" to busStops.first(),
+                        "next_points" to busStops.drop(1)
+                    )
+                )
+
+                val scheduleData = listOf(
+                    mapOf(
+                        "routeNo" to "Route 1",
+                        "startTime" to busStops.first()["time"],
+                        "endTime" to busStops.last()["time"],
+                        "dutyName" to routeId,
+                        "busStops" to busStops
+                    )
+                )
+
+                withContext(Dispatchers.Main) {
+                    setupCopyButtons(busRouteData.toString(), scheduleData.toString())
+                    Toast.makeText(applicationContext, "✅ busRouteData & scheduleData generated.", Toast.LENGTH_SHORT).show()
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(applicationContext, "❌ Failed to generate data: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets up the copy button to copy generated route + schedule data to clipboard.
+     */
+    /**
+     * Sets up copy buttons for busRouteData and scheduleData.
+     */
+    private fun setupCopyButtons(busData: String, scheduleData: String) {
+        val copyBusRouteButton = findViewById<Button>(R.id.copyBusRouteButton)
+        val copyScheduleButton = findViewById<Button>(R.id.copyScheduleButton)
+
+        copyBusRouteButton.setOnClickListener {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("busRouteData", busData)
+            clipboard.setPrimaryClip(clip)
+            Log.d("GTFS", "Copied busRouteData to clipboard")
+        }
+
+        copyScheduleButton.setOnClickListener {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("scheduleData", scheduleData)
+            clipboard.setPrimaryClip(clip)
+            Log.d("GTFS", "Copied scheduleData to clipboard")
+        }
+    }
+
 
     /**
      * Downloads the GTFS zip file from Auckland Transport to the hidden folder.

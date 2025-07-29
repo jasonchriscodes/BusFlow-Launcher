@@ -17,13 +17,68 @@
             android:layout_height="wrap_content"
             android:text="Fetch Routes" />
 
+        <EditText
+            android:id="@+id/routeIdInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Route ID (e.g., WX1-206)" />
+
+        <EditText
+            android:id="@+id/directionIdInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Direction ID (e.g., 1)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/shiftStartInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Shift Start (e.g., 10:00)" />
+
+        <EditText
+            android:id="@+id/shiftEndInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Shift End (e.g., 19:00)" />
+
+        <Button
+            android:id="@+id/generateButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Generate Data" />
+
+        <!-- Output: Bus Route Data -->
         <TextView
-            android:id="@+id/logOutput"
+            android:id="@+id/busRouteOutput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Log output will appear here..."
+            android:text="🚌 busRouteData will appear here..."
             android:textSize="14sp"
             android:textColor="#000000" />
+
+        <Button
+            android:id="@+id/copyBusRouteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Copy busRouteData" />
+
+        <!-- Output: Schedule Data -->
+        <TextView
+            android:id="@+id/scheduleOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="📅 scheduleData will appear here..."
+            android:textSize="14sp"
+            android:textColor="#000000" />
+
+        <Button
+            android:id="@+id/copyScheduleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Copy scheduleData" />
+
     </LinearLayout>
 </ScrollView>
