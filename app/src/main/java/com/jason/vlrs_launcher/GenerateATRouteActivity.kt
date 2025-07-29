@@ -1,6 +1,7 @@
 package com.jason.vlrs_launcher
 
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -9,8 +10,16 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.zip.ZipInputStream
 
 class GenerateATRouteActivity : AppCompatActivity() {
 
@@ -26,41 +35,124 @@ class GenerateATRouteActivity : AppCompatActivity() {
         val logOutput = findViewById<TextView>(R.id.logOutput)
 
         fetchButton.setOnClickListener {
-            logOutput.text = "Fetching raw data from Auckland Transport...\n"
-            lifecycleScope.launch {
-                val result = fetchRawRoutes()
-                logOutput.append(result)
+            val logOutput = findViewById<TextView>(R.id.logOutput)
+            logOutput.text = ""
+
+            val zipFile = File(getHiddenFolder(), "gtfs.zip")
+            val gtfsFolder = getGTFSFolder()
+
+            // Check if GTFS zip already exists
+            if (zipFile.exists()) {
+                logOutput.append("⚠️ GTFS zip file already exists.\n")
+            } else {
+                logOutput.append("Downloading GTFS zip...\n")
+                downloadGTFSZip { downloadedZip ->
+                    if (downloadedZip != null) {
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val success = extractZip(downloadedZip, gtfsFolder)
+                            withContext(Dispatchers.Main) {
+                                if (success) {
+                                    logOutput.append("✅ GTFS data extracted to GTFS folder.\n")
+                                } else {
+                                    logOutput.append("❌ Failed to extract GTFS data.\n")
+                                }
+                            }
+                        }
+                    } else {
+                        runOnUiThread {
+                            logOutput.append("❌ Failed to download GTFS zip.\n")
+                        }
+                    }
+                }
+            }
+
+            // Check if GTFS folder is already populated
+            val files = gtfsFolder.listFiles()
+            if (files != null && files.isNotEmpty()) {
+                logOutput.append("📁 GTFS folder already contains ${files.size} files.\n")
             }
         }
     }
 
-    private suspend fun fetchRawRoutes(): String = withContext(Dispatchers.IO) {
-        val url = "${baseUrl}routes"
-        Log.d("AT_RAW", "Requesting: $url")
+    /**
+     * Downloads the GTFS zip file from Auckland Transport to the hidden folder.
+     * Calls onComplete with the downloaded file or null on failure.
+     */
+    private fun downloadGTFSZip(onComplete: (File?) -> Unit) {
+        val url = "https://gtfs.at.govt.nz/gtfs.zip"
+        val request = Request.Builder().url(url).build()
+        val client = OkHttpClient()
 
-        val request = Request.Builder()
-            .url(url)
-            .addHeader("Ocp-Apim-Subscription-Key", apiKey)
-            .addHeader("Accept", "application/json")
-            .build()
-
-        try {
-            val response = client.newCall(request).execute()
-            val rawJson = response.body?.string()
-
-            if (!response.isSuccessful || rawJson.isNullOrEmpty()) {
-                val errorMsg = "API error ${response.code}: ${rawJson ?: "Empty response"}"
-                Log.e("AT_RAW", errorMsg)
-                return@withContext errorMsg
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("GTFS", "Download failed", e)
+                onComplete(null)
             }
 
-            Log.d("AT_RAW", rawJson)
-            return@withContext rawJson
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val zipFile = File(getHiddenFolder(), "gtfs.zip")
+                    response.body?.byteStream()?.use { input ->
+                        zipFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    Log.d("GTFS", "Downloaded GTFS zip to ${zipFile.absolutePath}")
+                    onComplete(zipFile)
+                } else {
+                    Log.e("GTFS", "Download failed: ${response.code}")
+                    onComplete(null)
+                }
+            }
+        })
+    }
+    /**
+     * Returns the GTFS subfolder inside the hidden folder.
+     * Creates it if it does not exist.
+     */
+    private fun getGTFSFolder(): File {
+        val gtfsFolder = File(getHiddenFolder(), "GTFS")
+        if (!gtfsFolder.exists()) gtfsFolder.mkdirs()
+        return gtfsFolder
+    }
 
+    /**
+     * Gets the hidden folder directory where cached bus data is stored.
+     * Creates the folder if it does not exist.
+     *
+     * @return File representing the hidden directory.
+     */
+    private fun getHiddenFolder(): File {
+        val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        val hiddenFolder = File(docsDir, ".vlrshiddenfolder")
+        if (!hiddenFolder.exists()) hiddenFolder.mkdirs()
+        return hiddenFolder
+    }
+
+    /**
+     * Extracts the contents of the given GTFS zip file into the specified output directory.
+     * Returns true if successful, false otherwise.
+     */
+    private fun extractZip(zipFile: File, outputDir: File): Boolean {
+        return try {
+            ZipInputStream(FileInputStream(zipFile)).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val newFile = File(outputDir, entry.name)
+                    if (entry.isDirectory) {
+                        newFile.mkdirs()
+                    } else {
+                        // Ensure parent directories exist
+                        newFile.parentFile?.mkdirs()
+                        FileOutputStream(newFile).use { output -> zis.copyTo(output) }
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+            Log.d("GTFS", "Extraction complete to ${outputDir.absolutePath}")
+            true
         } catch (e: Exception) {
-            val exceptionMsg = "Exception: ${e.localizedMessage}"
-            Log.e("AT_RAW", exceptionMsg, e)
-            return@withContext exceptionMsg
+            Log.e("GTFS", "Extraction failed", e)
+            false
         }
     }
 }
