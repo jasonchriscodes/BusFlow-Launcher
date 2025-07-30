@@ -168,14 +168,14 @@
                 android:id="@+id/updateButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Update BuSkedo"
+                android:text="Update BusFlow"
                 android:layout_marginEnd="16dp"/>
 
             <Button
                 android:id="@+id/startButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start BuSkedo"
+                android:text="Start BusFlow"
                 android:layout_marginStart="16dp"/>
 
         </LinearLayout>
