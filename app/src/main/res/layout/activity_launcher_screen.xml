@@ -124,11 +124,13 @@
         <!-- Background ImageView with bottom alignment -->
         <ImageView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:src="@drawable/ic_bus_background9"
-            android:scaleType="centerCrop"
-            android:adjustViewBounds="true"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_background10"
             android:layout_gravity="bottom"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="30dp"
             android:contentDescription="Bus Background" />
 
         <!-- Top-right Close and Minimize Buttons -->
