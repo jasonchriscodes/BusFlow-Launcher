@@ -123,6 +123,7 @@
 
         <!-- Background ImageView with bottom alignment -->
         <ImageView
+            android:id="@+id/busBg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_bus_background10"
@@ -131,7 +132,8 @@
             android:scaleType="fitCenter"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="30dp"
-            android:contentDescription="Bus Background" />
+            android:contentDescription="Bus Background"
+            android:scaleX="-1" />
 
         <!-- Top-right Close and Minimize Buttons -->
         <LinearLayout
